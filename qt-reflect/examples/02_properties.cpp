@@ -1,5 +1,5 @@
-// Свойства: сгенерированные qr::auto_property, READ/WRITE через геттер и
-// сеттер, наследование метаобъектов.
+// Свойства: qr::auto_property, READ/WRITE через геттер и сеттер,
+// наследование метаобъектов.
 #include <qr/qobject.hpp>
 
 #include <QtCore/qstring.h>
@@ -8,15 +8,13 @@
 
 namespace demo {
 
-class Person : public QObject {
-  consteval {
-    qr::object();
-    // Поле m_name, name(), setName(), сигнал nameChanged(const QString&).
-    qr::auto_property(^^QString, "name");
-    qr::auto_property(^^int, "age");
-  }
-
+class Person : public qr::Object<Person> {
 public:
+  // Свойство с хранилищем и сигналом nameChanged(const QString&), который
+  // есть только в метаобъекте.
+  qr::auto_property<QString> name{this};
+  qr::auto_property<int> age{this};
+
   // READ-свойство: const-геттер с аннотацией. WRITE - найденный по имени
   // setEmail, NOTIFY - сигнал emailChanged.
   [[=qr::property]] QString email() const { return m_email; }
@@ -28,29 +26,21 @@ public:
   [[=qr::signal]] void emailChanged();
 
   // Только чтение: ни сеттера, ни сигнала.
-  [[=qr::property]] bool adult() const { return age() >= 18; }
+  [[=qr::property]] bool adult() const { return age >= 18; }
 
 private:
   QString m_email;
 };
 
 // Наследник: свой метаобъект поверх метаобъекта Person.
-class Employee : public Person {
-  consteval {
-    qr::object();
-    qr::auto_property(^^QString, "position");
-  }
-
+class Employee : public qr::Object<Employee, Person> {
 public:
-  [[=qr::slot]] void promote() { setPosition("senior " + position()); }
+  qr::auto_property<QString> position{this};
+
+  [[=qr::slot]] void promote() { position = "senior " + position.get(); }
 };
 
 }  // namespace demo
-
-consteval {
-  qr::meta_object(^^demo::Person);
-  qr::meta_object(^^demo::Employee);
-}
 
 static void print(const QObject& o) {
   const QMetaObject* mo = o.metaObject();
@@ -67,20 +57,23 @@ int main() {
   dump::meta_object(demo::Person::staticMetaObject);
   dump::meta_object(demo::Employee::staticMetaObject);
 
-  dump::section("сгенерированные геттеры, сеттеры и сигналы");
+  dump::section("auto_property: запись и сигналы");
   demo::Employee e;
-  QObject::connect(&e, &demo::Person::nameChanged, [](const QString& n) {
+  // Сигнал auto_property - не функция-член, указатель на него даёт qr::changed.
+  QObject::connect(&e, qr::changed<&demo::Person::name>, [](const QString& n) {
     std::printf("nameChanged(%s)\n", qPrintable(n));
   });
-  QObject::connect(&e, &demo::Employee::positionChanged, [](const QString& p) {
+  QObject::connect(&e, qr::changed<&demo::Employee::position>, [](const QString& p) {
     std::printf("positionChanged(%s)\n", qPrintable(p));
   });
+  // Строковый connect тоже работает.
+  QObject::connect(&e, SIGNAL(ageChanged(int)), &e, SLOT(promote()));
   QObject::connect(&e, &demo::Person::emailChanged,
                    [] { std::printf("emailChanged()\n"); });
-  e.setName("Ada");
-  e.setName("Ada");  // значение не изменилось - сигнала нет
-  e.setAge(36);
-  e.setPosition("engineer");
+  e.name = "Ada";
+  e.name = "Ada";  // значение не изменилось - сигнала нет
+  e.position = "engineer";
+  e.age = 36;      // ageChanged -> promote()
   print(e);
 
   dump::section("запись по имени через метаобъект");

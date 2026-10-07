@@ -5,9 +5,7 @@
 
 namespace demo {
 
-class Counter : public QObject {
-  consteval { qr::object(); }  // вместо Q_OBJECT
-
+class Counter : public qr::Object<Counter> {  // вместо QObject + Q_OBJECT
 public:
   [[=qr::signal]] void valueChanged(int value);
   [[=qr::signal]] void overflow();
@@ -30,9 +28,6 @@ public:
 };
 
 }  // namespace demo
-
-// Всё, что moc написал бы в moc_counter.cpp.
-consteval { qr::meta_object(^^demo::Counter); }
 
 int main() {
   demo::Counter a, b;

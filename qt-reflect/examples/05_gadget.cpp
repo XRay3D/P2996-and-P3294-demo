@@ -1,4 +1,4 @@
-// Гаджеты: qr::gadget() вместо Q_GADGET. Свойства и invokable-методы у
+// Гаджеты: qr::Gadget<T> вместо Q_GADGET. Свойства и invokable-методы у
 // класса без QObject, доступ через readOnGadget/writeOnGadget/invokeOnGadget,
 // наследование, гаджет в QVariant и как тип свойства QObject.
 #include <qr/qobject.hpp>
@@ -12,10 +12,7 @@
 
 namespace demo {
 
-struct Point {
-  consteval { qr::gadget(); }
-
-public:
+struct Point : qr::Gadget<Point> {
   [[=qr::property]] double x = 0;
   [[=qr::property]] double y = 0;
 
@@ -35,7 +32,7 @@ public:
   }
 
   // Нужен записи Point в MEMBER-свойство QObject: значение пишется и
-  // сигнал эмитится только при изменении.
+  // сигнал испускается только при изменении.
   bool operator==(const Point&) const = default;
 
 private:
@@ -43,39 +40,18 @@ private:
 };
 
 // Наследник: свой метаобъект, база - метаобъект Point.
-struct Point3D : Point {
-  consteval { qr::gadget(); }
-
-public:
+struct Point3D : qr::Gadget<Point3D, Point> {
   [[=qr::property]] double z = 0;
 };
 
-// Обычный Q_GADGET тоже подходит: qr::meta_object заменяет только moc.
-struct Size {
-  Q_GADGET
-
-public:
-  [[=qr::property]] int width = 0;
-  [[=qr::property]] int height = 0;
-};
-
 // Гаджет как тип свойства QObject.
-class Marker : public QObject {
-  consteval { qr::object(); }
-
+class Marker : public qr::Object<Marker> {
 public:
   [[=qr::property]] Point pos;
   [[=qr::signal]] void posChanged(const Point& pos);
 };
 
 }  // namespace demo
-
-consteval {
-  qr::meta_object(^^demo::Point);
-  qr::meta_object(^^demo::Point3D);
-  qr::meta_object(^^demo::Size);
-  qr::meta_object(^^demo::Marker);
-}
 
 // Все свойства гаджета, включая унаследованные: у гаджета нет базы QObject,
 // и свойства базы начинаются с индекса 0.
@@ -98,7 +74,6 @@ int main() {
   dump::section("метаобъекты");
   dump::meta_object(pmo);
   dump::meta_object(demo::Point3D::staticMetaObject);
-  dump::meta_object(demo::Size::staticMetaObject);
 
   dump::section("QMetaType узнаёт гаджет");
   QMetaType t = QMetaType::fromType<demo::Point>();
@@ -127,10 +102,6 @@ int main() {
   write(&q, qmo, "x", 1.0);  // свойство базы через метаобъект наследника
   write(&q, qmo, "z", 2.0);
   print(qmo, &q);
-  demo::Size sz;
-  write(&sz, demo::Size::staticMetaObject, "width", 640);
-  write(&sz, demo::Size::staticMetaObject, "height", 480);
-  print(demo::Size::staticMetaObject, &sz);
 
   dump::section("гаджет в QVariant");
   QVariant v = QVariant::fromValue(p);

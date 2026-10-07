@@ -14,9 +14,7 @@ struct Point {
   int x = 0, y = 0;
 };
 
-class Calculator : public QObject {
-  consteval { qr::object(); }
-
+class Calculator : public qr::Object<Calculator> {
 public:
   [[=qr::signal]] void computed(const QString& expr, double result);
   [[=qr::signal]] void moved(demo::Point p);
@@ -51,8 +49,6 @@ private:
 }  // namespace demo
 
 Q_DECLARE_METATYPE(demo::Point)
-
-consteval { qr::meta_object(^^demo::Calculator); }
 
 int main(int argc, char** argv) {
   QCoreApplication app(argc, argv);

@@ -10,9 +10,7 @@
 
 namespace demo {
 
-class Thermostat : public QObject {
-  consteval { qr::object(); }
-
+class Thermostat : public qr::Object<Thermostat> {
 public:
   // Свойства идут в метаобъект в порядке объявления, как Q_PROPERTY у moc.
   [[=qr::property]] double target = 21;
@@ -42,8 +40,6 @@ private:
 };
 
 }  // namespace demo
-
-consteval { qr::meta_object(^^demo::Thermostat); }
 
 namespace {
 
