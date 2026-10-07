@@ -1,0 +1,31 @@
+# clangd для примеров EDG.
+#
+# EDG-флаги (--c++26, --set_flag=...) clang не понимает, а <experimental/meta>
+# у EDG — это meta.stdh с синтаксисом ^^, который обычный clang не разбирает.
+# Поэтому разбор идёт через clang-p2996 (Bloomberg) с его libc++ и
+# <experimental/meta>; нужен и сам clangd из /opt/clang-p2996/bin.
+CompileFlags:
+  Compiler: /opt/clang-p2996/bin/clang++
+  Remove:
+  #   # Флаги EDG из compile_commands.json.
+  #   - -tlocal
+  #   - --no_auto_instantiation
+  #   - --c++26
+  #   - --set_flag=*
+  #   - --sys_include
+  #   - --diag_suppress
+  #   - -fdiagnostics-color=*
+  #   # Qt Creator отключает стандартные пути и подставляет заголовки своего
+  #   # clang# без этого не находится libc++ clang-p2996.
+  #   - -nostdinc
+  #   - -nostdinc++
+  #   - -isystem
+  #   - -std=*
+  Add:
+    - -std=c++26
+    - -freflection-latest
+    - -ftoken-injection
+    # Установленный в /opt clangd собран без поддержки libstdc++ (<meta> в
+    # libstdcxx_wrappers), поэтому <experimental/meta> берётся из libc++.
+    # После установки сборки с ветки libstdcxx-reflection строку можно убрать.
+    - -stdlib=libc++

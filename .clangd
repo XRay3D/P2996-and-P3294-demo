@@ -1,0 +1,35 @@
+# clangd для clang-p2996 (/opt/clang-p2996).
+#
+# Сам clangd должен быть из /opt/clang-p2996/bin: обычный clangd не знает
+# -freflection-latest и ^^. VS Code: .vscode/settings.json, Qt Creator:
+# Настройки > C++ > Clangd > Путь к clangd.
+#
+# База флагов. VS Code берёт compile_commands.json сборки clang-p2996:
+#   cmake -B build-p2996 -G Ninja -DCMAKE_CXX_COMPILER=/opt/clang-p2996/bin/clang++ \
+#         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+# Qt Creator передаёт clangd свою базу (<сборка>/.qtc_clangd), этот путь
+# главнее CompilationDatabase.
+#
+# Стандартная библиотека. clang-p2996 собран с поддержкой libstdc++: его
+# <experimental/meta> и <meta> лежат в libstdcxx_wrappers ресурсного каталога,
+# GCC 16 выбирается через /opt/clang-p2996/bin/x86_64-alt-linux.cfg.
+# Каталог libstdcxx_wrappers обязан стоять раньше заголовков GCC: в GCC 16
+# есть свой <meta>, он требует рефлексии GCC и у clang пуст ("no member named
+# 'meta' in namespace 'std'"). Qt Creator подставляет -nostdinc и явные
+# -isystem, где libstdcxx_wrappers идёт после GCC. Поэтому все -isystem
+# убираются, пути стандартной библиотеки расставляет драйвер clang-p2996,
+# а пути Qt добавляются заново.
+CompileFlags:
+  CompilationDatabase: build-p2996
+  Compiler: /opt/clang-p2996/bin/clang++
+  Remove:
+    - -nostdinc
+    - -nostdinc++
+    - -isystem
+  Add:
+    - -std=c++26
+    - -freflection-latest
+    - -ftoken-injection
+    - -isystem/usr/include/qt6
+    - -isystem/usr/include/qt6/QtCore
+    - -isystem/usr/lib64/qt6/mkspecs/linux-g++

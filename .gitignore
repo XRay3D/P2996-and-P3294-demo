@@ -1,0 +1,4 @@
+/build*/
+/.qtcreator/
+.cache/
+.claude/settings.local.json

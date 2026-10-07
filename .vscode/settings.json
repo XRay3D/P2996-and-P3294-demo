@@ -1,0 +1,7 @@
+{
+  "clangd.path": "/opt/clang-p2996/bin/clangd",
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build-p2996",
+    "--header-insertion=never"
+  ]
+}
